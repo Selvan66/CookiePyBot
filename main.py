@@ -1,3 +1,4 @@
+import os
 import time
 import threading
 import pyautogui
@@ -5,6 +6,8 @@ import cv2
 import numpy as np
 from pynput.mouse import Button, Controller
 from pynput.keyboard import Listener, Key
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 delay = 0.001
 button = Button.left
@@ -23,18 +26,32 @@ class Bot(threading.Thread):
 		self.running = False
 		self.program_running = True
 		self.mouse_pos = mouse.position
+		self.image = None
 
 	def start_clicking(self):
 		self.running = True
-		self.mouse_pos = mouse.position
 
 	def stop_clicking(self):
 		self.running = False
 
-	def save_screeshot(self, path):
-		image = pyautogui.screenshot()
-		image = cv2.cvtColor(np.array(image),cv2.COLOR_RGB2BGR)
-		cv2.imwrite('{}/{}.jpg'.format(path, time.time()), image)
+	def make_screeshot(self):
+		self.image = pyautogui.screenshot()
+		self.image = cv2.cvtColor(np.array(self.image),cv2.COLOR_RGB2BGR)
+
+	def find_on_screen(self, photo):
+		find_photo = cv2.imread(photo, cv2.IMREAD_UNCHANGED)
+		result = cv2.matchTemplate(self.image, find_photo, cv2.TM_CCOEFF_NORMED)
+		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+		threshold = 0.7
+		if max_val >= threshold:
+			cookie_width = find_photo.shape[1]
+			cookie_height= find_photo.shape[0]
+
+			top_left = max_loc
+			middle = (top_left[0] + (cookie_width / 2), top_left[1] + (cookie_height / 2))
+			self.mouse_pos = middle	
+		cv2.imshow('test', result)
+		cv2.waitKey(100)	
 
 	def exit(self):
 		self.stop_clicking()
@@ -42,6 +59,10 @@ class Bot(threading.Thread):
 
 	def run(self):
 		while self.program_running:
+			self.make_screeshot()
+			#self.find_on_screen('Photo/main_cookie.jpg')
+			self.find_on_screen('Photo/wrath_cookie.jpg')
+			self.find_on_screen('Photo/golden_cookie.jpg')
 			while self.running:
 				mouse.position = self.mouse_pos
 				mouse.click(self.button)
@@ -61,12 +82,6 @@ def on_press(key):
 	elif key == exit_key:
 		click_thread.exit()
 		listener.stop()
-	elif key == pos_cookie_key:
-		click_thread.save_screeshot('MainCookie/Pos')
-	elif key == neg_cookie_key:
-		click_thread.save_screeshot('MainCookie/Neg')
-	elif key == pos_golden_key:
-		click_thread.save_screeshot('GoldenCookie/Pos')
 		
 
 with Listener(on_press=on_press) as listener:
