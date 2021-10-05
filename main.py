@@ -1,11 +1,11 @@
 import os
 import time
 import threading
-import pyautogui
 import cv2
-import numpy as np
 from pynput.mouse import Button, Controller
 from pynput.keyboard import Listener, Key
+
+from windowcapture import CookieWindowCapture
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -28,20 +28,17 @@ class Bot(threading.Thread):
 		self.running = False
 		self.program_running = True
 		self.mouse_pos = mouse.position
-		self.image = None
+		self.window = CookieWindowCapture()
+		self.image = self.window.get_screenshot()
 
 	def start_clicking(self):
 		self.running = True
 
 	def stop_clicking(self):
 		self.running = False
-
-	def make_screeshot(self):
-		self.image = pyautogui.screenshot()
-		self.image = cv2.cvtColor(np.array(self.image),cv2.COLOR_RGB2BGR)
-
+		
 	def find_on_screen(self, photo):
-		self.make_screeshot()	
+		self.image = self.window.get_screenshot()
 		find_photo = cv2.imread(photo, cv2.IMREAD_UNCHANGED)
 		result = cv2.matchTemplate(self.image, find_photo, cv2.TM_CCOEFF_NORMED)
 		_, max_val, _, max_loc = cv2.minMaxLoc(result)
@@ -52,7 +49,7 @@ class Bot(threading.Thread):
 
 			top_left = max_loc
 			middle = (top_left[0] + (cookie_width / 2), top_left[1] + (cookie_height / 2))
-			self.mouse_pos = middle		
+			print(middle)	
 
 	def exit(self):
 		self.stop_clicking()
@@ -62,8 +59,8 @@ class Bot(threading.Thread):
 		while self.program_running:
 			self.find_on_screen('Photo/main_cookie.jpg')
 			while self.running:
-				mouse.position = self.mouse_pos
-				mouse.click(self.button)
+				#mouse.position = self.mouse_pos
+				#mouse.click(self.button)
 				time.sleep(self.delay)
 			time.sleep(0.1)
 
