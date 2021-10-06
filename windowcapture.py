@@ -1,71 +1,39 @@
+from PIL import ImageGrab
 import numpy as np
-import win32gui, win32ui, win32con
+import win32gui
+import cv2
 
 class CookieWindowCapture:
-
-     # properties
-    w = 0
-    h = 0
+    winlist = []
+    cookiewin = None
     hwnd = None
-    win_name = None
-    cropped_x = 0
-    cropped_y = 0
-    offset_x = 0
-    offset_y = 0
+    win_rec = None
+    w, h = 0, 0
 
-    # constructor
     def __init__(self):
-        self.find_cookie_window();
-        self.hwnd = win32gui.FindWindow(None, self.win_name)
-        if not self.hwnd:
-            raise Exception('Window not found: {}'.format(self.win_name))
+        self.find_window()
+        self.win_rec = win32gui.GetWindowRect(self.hwnd)
+        self.w = self.win_rec[2] - self.win_rec[0]
+        self.h = self.win_rec[3] - self.win_rec[1]
 
-        # get the window size
-        window_rect = win32gui.GetWindowRect(self.hwnd)
-        self.w = window_rect[2] - window_rect[0]
-        self.h = window_rect[3] - window_rect[1]
+    def find_window(self):
+        self.get_winlist()
+        self.cookiewin =  [(hwnd, title) for hwnd, title in self.winlist if 'cookie clicker' in title.lower()]
+        self.cookiewin = self.cookiewin[0]
+        self.hwnd = self.cookiewin[0]
 
-        border_pixels = 8
-        titlebar_pixels = 30
-        self.w = self.w - (border_pixels * 2)
-        self.h = self.h - titlebar_pixels - border_pixels
-        self.cropped_x = border_pixels
-        self.cropped_y = titlebar_pixels
-        self.offset_x = window_rect[0] + self.cropped_x
-        self.offset_y = window_rect[1] + self.cropped_y
-
-    def get_screenshot(self):
-
-        # get the window image data
-        wDC = win32gui.GetWindowDC(self.hwnd)
-        dcObj = win32ui.CreateDCFromHandle(wDC)
-        cDC = dcObj.CreateCompatibleDC()
-        dataBitMap = win32ui.CreateBitmap()
-        dataBitMap.CreateCompatibleBitmap(dcObj, self.w, self.h)
-        cDC.SelectObject(dataBitMap)
-        cDC.BitBlt((0, 0), (self.w, self.h), dcObj, (self.cropped_x, self.cropped_y), win32con.SRCCOPY)
-        signedIntsArray = dataBitMap.GetBitmapBits(True)
-        img = np.fromstring(signedIntsArray, dtype='uint8')
-        img.shape = (self.h, self.w, 4)
-
-        # free resources
-        dcObj.DeleteDC()
-        cDC.DeleteDC()
-        win32gui.ReleaseDC(self.hwnd, wDC)
-        win32gui.DeleteObject(dataBitMap.GetHandle())
-        img = img[...,:3]
-        img = np.ascontiguousarray(img)
-
+    def get_screen(self):
+        self.find_window()
+        win32gui.SetForegroundWindow(self.hwnd)
+        img = ImageGrab.grab(self.win_rec)
+        img = np.array(img)
+        img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
         return img
 
-    def find_cookie_window(self):
-        def winEnumHandler(hwnd, ctx):
-            if win32gui.IsWindowVisible(hwnd) and ('Cookie Clicker' in win32gui.GetWindowText(hwnd)):
-                self.win_name = win32gui.GetWindowText(hwnd)
-        win32gui.EnumWindows(winEnumHandler, None)
-    
-    # translate a pixel position on a screenshot image to a pixel position on the screen.
-    def get_screen_position(self, pos):
-        return (pos[0] + self.offset_x, pos[1] + self.offset_y)
+    def get_winlist(self):
+        def enum_cb(hwnd, results):
+            self.winlist.append((hwnd, win32gui.GetWindowText(hwnd)))
+        win32gui.EnumWindows(enum_cb, None)
 
-w = CookieWindowCapture()
+    def get_pos(self, pos):
+        return (pos[0] + self.win_rec[0], pos[1] + self.win_rec[1])
