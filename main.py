@@ -28,9 +28,11 @@ class Bot(threading.Thread):
 		self.program_running = True
 		self.mouse_pos = mouse.position
 		self.window = CookieWindowCapture()
-		self.image = self.window.get_screen()
+		self.image = None
 
 	def start_clicking(self):
+		self.window.active()
+		self.find_on_screen('Photo/main_cookie.jpg')
 		self.running = True
 
 	def stop_clicking(self):
@@ -38,6 +40,9 @@ class Bot(threading.Thread):
 		
 	def find_on_screen(self, photo):
 		self.image = self.window.get_screen()
+		print('test')
+		cv2.imshow('test', self.image)
+		cv2.waitKey(1)
 		find_photo = cv2.imread(photo, cv2.IMREAD_UNCHANGED)
 		result = cv2.matchTemplate(self.image, find_photo, cv2.TM_CCOEFF_NORMED)
 		_, max_val, _, max_loc = cv2.minMaxLoc(result)
@@ -55,10 +60,9 @@ class Bot(threading.Thread):
 
 	def run(self):
 		while self.program_running:
-			self.find_on_screen('Photo/main_cookie.jpg')
 			while self.running:
-				mouse.position = self.mouse_pos
-				mouse.click(self.button)
+				#mouse.position = self.mouse_pos
+				#mouse.click(self.button)
 				time.sleep(self.delay)
 			time.sleep(0.1)
 
