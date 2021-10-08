@@ -10,7 +10,7 @@ class CookieWindowCapture:
     hwnd = None
     win_rec = None
     w, h = 0, 0 
-    window_name = 'studio code'
+    window_name = 'cookie clicker'
 
     def get_winlist(self):
         def enum_cb(hwnd, results):
@@ -28,8 +28,10 @@ class CookieWindowCapture:
 
         self.cookiewin = self.cookiewin[0]
         self.hwnd = self.cookiewin[0]
-        win32gui.ShowWindow(self.hwnd, win32con.SW_MAXIMIZE)
+        win32gui.ShowWindow(self.hwnd, win32con.SW_SHOWMAXIMIZED)
+        # TODO set focus on screen
         self.win_rec = win32gui.GetWindowRect(self.hwnd)
+        time.sleep(0.5) # time to open window while is minimized
 
     def get_screen(self):
         img = ImageGrab.grab(self.win_rec, all_screens=True)
