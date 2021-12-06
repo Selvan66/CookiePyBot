@@ -1,8 +1,9 @@
-import os
+import os, sys
 from bot import CookiePyBot
 from pynput.keyboard import Listener, Key
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
+sys.tracebacklimit = 0
 
 ############################OPTIONS###########################
 
@@ -24,6 +25,12 @@ def on_press(key):
 	elif key == exit_key:
 		bot.exit()
 		listener.stop()
-		
-with Listener(on_press=on_press) as listener:
-	listener.join()
+
+try: 
+    with Listener(on_press=on_press) as listener:
+    	listener.join()
+except Exception as ex:
+    print(ex)
+finally:
+	bot.exit()
+	listener.stop()
